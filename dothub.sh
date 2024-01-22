@@ -7,9 +7,8 @@ set -euo pipefail
 DOTHUB_LOG_FILE=${DOTHUB_LOG_FILE:-$HOME/.dothub.log}
 # DOT_DIR=${DOT_DIR:-${1:-"./"}}
 # PACKAGE_MANAGER=y${PACKAGE_MANAGER:-yay}
-PACKAGE_MANAGER=yay
 PACKAGE_LIST=("git" "curl" "wget" "zsh" "tmux" "foot")
-INSTALL_COMMAND="yay -S"
+# INSTALL_COMMAND="yay -S"
 DOTFILE_GIT_REPO="https://github.com/ashish-kus/dotfiles"
 
 
@@ -91,22 +90,22 @@ setup_package_manager() {
 # Function to install one or more packages
 install_packages() {
     local package_manager="$PACKAGE_MANAGER"
-    shift # Remove the first argument (package manager) from the list
-    local packages=("$@")
+    packages=( "$@" )
 
     if [ "${#packages[@]}" -eq 0 ]; then
         echo "No packages specified to install."
         return
     fi
 
-    for package in "${packages[@]}"; do
-        if ! command_exists "$package"; then
-          echo "Installing $package using $package_manager"
-          yes | $INSTALL_COMMAND $package 2>&1 | _log "Installing $package" 
-        else
-
-            echo "$package is already installed."
-        fi
+    for package in "${packages[@]}";
+        do
+          if ! command_exists "$package"; then
+            echo "Installing $package using $package_manager"
+            # yes | $INSTALL_COMMAND $package 2>&1 | _log "installing $package using $package_manager"
+            $INSTALL_COMMAND $package 2>&1
+          else
+              echo "$package is already installed."
+          fi
     done
 }
 
@@ -138,8 +137,8 @@ DOTFILES_PATH="$(eval echo "$DOTFILES_PATH")"
 export DOTFILES_PATH="$DOTFILES_PATH" # path might contain variables or special characters that 
                                       # need to be expanded or interpreted correctly.                                      
 DOTHUB_CONFIG_PATH="$DOTFILES_PATH/dothub.conf"
-
-install_packages "git" "curl"
+setup_package_manager
+install_packages  "foot" "espanso-wayland"
 
 }
 main
