@@ -4,7 +4,7 @@
 set -euo pipefail
 
 # setup environment variables
-DOTHUB_LOG_FILE=${DOTHUB_LOG_FILE:-$HOME/.dothub.log}
+DOTMASTER_LOG_FILE=${DOTMASTER_LOG_FILE:-$HOME/.dotmaster.log}
 # DOT_DIR=${DOT_DIR:-${1:-"./"}}
 # PACKAGE_MANAGER=y${PACKAGE_MANAGER:-yay}
 PACKAGE_LIST=("git" "curl" "wget" "zsh" "tmux" "foot")
@@ -42,21 +42,21 @@ _q() { read -rp "🤔 $1: " "$2"; }
 
 # Function to log messages to a logfile
 _log() {
-  if [ ! -f $DOTHUB_LOG_FILE ]; then
-      _e "DOTHUB_LOG_FILE not Found"
-      touch $DOTHUB_LOG_FILE
-      _s "DOTHUB_LOG_FILE created ~/.dothub.log"
+  if [ ! -f $DOTMASTER_LOG_FILE ]; then
+      _e "$DOTMASTER_LOG_FILE not Found"
+      touch $DOTMASTER_LOG_FILE
+      _s "DOTMASTER_LOG_FILE_LOG_FILE created ~/.dotmaster.log"
   fi
 	log_name="$1"
 	current_date=$(date "+%Y-%m-%d %H:%M:%S")
 
-	echo "----- $current_date - $log_name -----" >>"$DOTHUB_LOG_FILE"
+	echo "----- $current_date - $log_name -----" >>"$DOTMASTER_LOG_FILE"
 
 	while IFS= read -r log_message; do
-		echo "$log_message" >>"$DOTHUB_LOG_FILE"
+		echo "$log_message" >>"$DOTMASTER_LOG_FILE"
 	done
 
-	echo "" >>"$DOTHUB_LOG_FILE"
+	echo "" >>"$DOTMASTER_LOG_FILE"
 }
 
 # Function to check if a command exists
@@ -93,18 +93,19 @@ install_packages() {
     packages=( "$@" )
 
     if [ "${#packages[@]}" -eq 0 ]; then
-        echo "No packages specified to install."
+        _e "No packages specified to install."
         return
     fi
 
     for package in "${packages[@]}";
         do
           if ! command_exists "$package"; then
-            echo "Installing $package using $package_manager"
+            _a "Installing $package using $package_manager"
             # yes | $INSTALL_COMMAND $package 2>&1 | _log "installing $package using $package_manager"
             $INSTALL_COMMAND $package 2>&1
+            _s "$package installed using $package_manager"
           else
-              echo "$package is already installed."
+              _s "$package is already installed."
           fi
     done
 }
@@ -128,7 +129,7 @@ create_symlinks(){
 
 main() {
 _w "  ┌──────────────────────────────────────┐"
-_w "~ │ 🚀 Welcome to the ${green}dothub${normal} installer!  │ ~"
+_w "~ │ 🚀 Welcome to the ${green}DOTMASTER${normal} installer!  │ ~"
 _w "  └──────────────────────────────────────┘"
 _w
 _q 'Where do you want your dotfiles to be located? (default ~/.dotfiles)' "DOTFILES_PATH"
@@ -136,9 +137,13 @@ DOTFILES_PATH="${DOTFILES_PATH:-$HOME/.dotfiles}"
 DOTFILES_PATH="$(eval echo "$DOTFILES_PATH")"
 export DOTFILES_PATH="$DOTFILES_PATH" # path might contain variables or special characters that 
                                       # need to be expanded or interpreted correctly.                                      
-DOTHUB_CONFIG_PATH="$DOTFILES_PATH/dothub.conf"
+DOTMASTER_CONFIG_PATH="$DOTFILES_PATH/dotmaster.conf"
 setup_package_manager
-install_packages  "foot" "espanso-wayland"
+# _a "Want to install all packages ?"
+
+if ! command_exists "git";then
+    install_packages "git"
+fi
 
 }
 main
