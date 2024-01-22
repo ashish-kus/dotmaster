@@ -109,21 +109,21 @@ install_packages() {
 
 
 
-installing_repo() {
-    if [ -d "$DOTFILES_PATH" ]; then
-      _e "$DOTFILES_PATH already exists"
-        mkdir -p "$DOTFILES_PATH/../.dotmaster_backup/"
-      _a "creating backup $DOTFILES_PATH/../.dotmaster_backup/ "
-        mv "$DOTFILES_PATH" "$DOTFILES_PATH/../.dotmaster_backup/"
-      _s "backup created at $HOME/.dotmaster_backup"
-    fi
+# installing_repo() {
+#     if [ -d "$DOTFILES_PATH" ]; then
+#       _e "$DOTFILES_PATH already exists"
+#         mkdir -p "$DOTFILES_PATH/../.dotmaster_backup/"
+#       _a "creating backup $DOTFILES_PATH/../.dotmaster_backup/ "
+#         mv "$DOTFILES_PATH" "$DOTFILES_PATH/../.dotmaster_backup/"
+#       _s "backup created at $HOME/.dotmaster_backup"
+#     fi
 
-    if command_exists "git"; then
-        git clone "$1" "$DOTFILES_PATH"
-    else
-        _e "git not installed"
-    fi
-}
+#     if command_exists "git"; then
+#         git clone "$1" "$DOTFILES_PATH"
+#     else
+#         _e "git not installed"
+#     fi
+# }
 
 installing_repo() {
     if [ -d "$DOTFILES_PATH" ]; then
