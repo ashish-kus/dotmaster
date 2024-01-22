@@ -9,10 +9,7 @@ DOTMASTER_LOG_FILE=${DOTMASTER_LOG_FILE:-$HOME/.dotmaster.log}
 # PACKAGE_MANAGER=y${PACKAGE_MANAGER:-yay}
 PACKAGE_LIST=("git" "curl" "wget" "zsh" "tmux" "foot")
 # INSTALL_COMMAND="yay -S"
-DOTFILE_GIT_REPO="https://github.com/ashish-kus/dotfiles"
-
-
-
+# DOTFILE_GIT_REPO="https://github.com/ashish-kus/dotfiles"
 
 ### Printing Functuins
 
@@ -111,23 +108,100 @@ install_packages() {
 }
 
 
-create_symlinks(){
-    directory_list=$(find $DOT_DIR -mindepth 1 -not -name 'install.sh' )
-    # Iterate over the list using a for loop
 
-    for entry in $directory_list; do
-      # # Remove "./" and replace it with $HOME/
-      # modified_entry="${}"
-      modified_entry="$HOME/${entry#./}"
-      # echo "Modified Entry: $modified_entry"
-       ln -sf "$(pwd)/${entry#./}" "$modified_entry"
-      echo "$(pwd)/${entry#./}" "$modified_entry"
-      _log "$entry"
-      # # Add your additional logic or commands here
+installing_repo() {
+    if [ -d "$DOTFILES_PATH" ]; then
+      _e "$DOTFILES_PATH already exists"
+        mkdir -p "$DOTFILES_PATH/../.dotmaster_backup/"
+      _a "creating backup $DOTFILES_PATH/../.dotmaster_backup/ "
+        mv "$DOTFILES_PATH" "$DOTFILES_PATH/../.dotmaster_backup/"
+      _s "backup created at $HOME/.dotmaster_backup"
+    fi
+
+    if command_exists "git"; then
+        git clone "$1" "$DOTFILES_PATH"
+    else
+        _e "git not installed"
+    fi
+}
+
+installing_repo() {
+    if [ -d "$DOTFILES_PATH" ]; then
+      _e "$DOTFILES_PATH already exists"
+        local backup_dir="$DOTFILES_PATH/../.dotmaster_backup"
+        if [ -d "$backup_dir" ]; then
+          _a "backup directory exists ie $backup_dir"
+          mv "$DOTFILES_PATH" "$backup_dir/backup_$(date '+%Y%m%d%H%M%S')"
+          _s "backup created at $HOME/.dotmaster_backup_timestamp"
+        else
+          _a "creating backup $DOTFILES_PATH/../.dotmaster_backup_timestamp/ "
+          mkdir -p "$backup_dir"
+          mv "$DOTFILES_PATH" "$backup_dir/"
+          _s "backup created at $HOME/.dotmaster_backup_timestamp"
+        fi
+    fi
+    if command_exists "git"; then
+        git clone "$1" "$DOTFILES_PATH"
+    else
+        _e "git not installed"
+    fi
+}
+
+
+
+
+create_symlinks() {
+  # directory_list=$(find "$DOTFILES_PATH" -mindepth 1 -type f -not -name 'install.sh')
+  directory_list=$(find "$DOTFILES_PATH" -mindepth 1 -type f )
+  _a "creating symbolic links"
+
+  for entry in $directory_list; do
+    # Trim "./" and extract the relative path
+    modified_entry="${entry#./}"
+    modified_entry="${modified_entry#*/}"
+
+    # Obtain absolute paths
+    absolute_path=$(realpath "${entry#./}")
+    absolute_modified_entry="$HOME/$modified_entry"
+
+    # Determine the target directory
+    target_dir="$(dirname "$absolute_modified_entry")"
+
+    # Check if the target directory exists, create it if not
+    if [ ! -e "$target_dir" ]; then
+      mkdir -p "$target_dir"
+      _a "Created directory: $target_dir"
+    fi
+
+
+    # Uncomment the line below to create symbolic links
+    ln -sf "$absolute_path" "$absolute_modified_entry"
+
+    # Display the symbolic link creation information
+    _s "$absolute_path >>>> $absolute_modified_entry"
+
   done
-  }
+}
+
+# Call the function with the specified DOTFILES_PATH
+# create_symlinks(){
+#     directory_list=$(find $DOTFILES_PATH -mindepth 1 -not -name 'install.sh' )
+#     # Iterate over the list using a for loop
+
+#     for entry in $directory_list; do
+#       # # Remove "./" and replace it with $HOME/
+#       # modified_entry="${}"
+#       modified_entry="$HOME/${entry#./}"
+#       # echo "Modified Entry: $modified_entry"
+#        ln -sf "$(pwd)/${entry#./}" "$modified_entry"
+#       echo "$(pwd)/${entry#./}" "$modified_entry"
+#       _log "$entry"
+#       # # Add your additional logic or commands here
+#   done
+#   }
 
 main() {
+_w
 _w "  ┌──────────────────────────────────────┐"
 _w "~ │ 🚀 Welcome to the ${green}DOTMASTER${normal} installer!  │ ~"
 _w "  └──────────────────────────────────────┘"
@@ -143,7 +217,11 @@ setup_package_manager
 
 if ! command_exists "git";then
     install_packages "git"
-fi
+fi 
+
+DOTFILE_GIT_REPO=${DOTFILE_GIT_REPO:-${1}}
+installing_repo "$DOTFILE_GIT_REPO"
+# echo $DOTFILE_GIT_REPO
 
 }
-main
+main $@
