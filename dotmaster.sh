@@ -108,23 +108,6 @@ install_packages() {
 }
 
 
-
-# installing_repo() {
-#     if [ -d "$DOTFILES_PATH" ]; then
-#       _e "$DOTFILES_PATH already exists"
-#         mkdir -p "$DOTFILES_PATH/../.dotmaster_backup/"
-#       _a "creating backup $DOTFILES_PATH/../.dotmaster_backup/ "
-#         mv "$DOTFILES_PATH" "$DOTFILES_PATH/../.dotmaster_backup/"
-#       _s "backup created at $HOME/.dotmaster_backup"
-#     fi
-
-#     if command_exists "git"; then
-#         git clone "$1" "$DOTFILES_PATH"
-#     else
-#         _e "git not installed"
-#     fi
-# }
-
 installing_repo() {
     if [ -d "$DOTFILES_PATH" ]; then
       _e "$DOTFILES_PATH already exists"
@@ -146,9 +129,6 @@ installing_repo() {
         _e "git not installed"
     fi
 }
-
-
-
 
 create_symlinks() {
   # directory_list=$(find "$DOTFILES_PATH" -mindepth 1 -type f -not -name 'install.sh')
@@ -183,28 +163,11 @@ create_symlinks() {
   done
 }
 
-# Call the function with the specified DOTFILES_PATH
-# create_symlinks(){
-#     directory_list=$(find $DOTFILES_PATH -mindepth 1 -not -name 'install.sh' )
-#     # Iterate over the list using a for loop
-
-#     for entry in $directory_list; do
-#       # # Remove "./" and replace it with $HOME/
-#       # modified_entry="${}"
-#       modified_entry="$HOME/${entry#./}"
-#       # echo "Modified Entry: $modified_entry"
-#        ln -sf "$(pwd)/${entry#./}" "$modified_entry"
-#       echo "$(pwd)/${entry#./}" "$modified_entry"
-#       _log "$entry"
-#       # # Add your additional logic or commands here
-#   done
-#   }
-
 main() {
 _w
-_w "  ┌──────────────────────────────────────┐"
+_w "  ┌──────────────────────────────────────────┐"
 _w "~ │ 🚀 Welcome to the ${green}DOTMASTER${normal} installer!  │ ~"
-_w "  └──────────────────────────────────────┘"
+_w "  └──────────────────────────────────────────┘"
 _w
 _q 'Where do you want your dotfiles to be located? (default ~/.dotfiles)' "DOTFILES_PATH"
 DOTFILES_PATH="${DOTFILES_PATH:-$HOME/.dotfiles}"
