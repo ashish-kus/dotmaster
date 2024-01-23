@@ -185,6 +185,6 @@ fi
 DOTFILE_GIT_REPO=${DOTFILE_GIT_REPO:-${1}}
 installing_repo "$DOTFILE_GIT_REPO"
 # echo $DOTFILE_GIT_REPO
-
+create_symlinks
 }
 main $@
