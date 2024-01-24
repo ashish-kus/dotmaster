@@ -129,6 +129,29 @@ installing_repo() {
         _e "git not installed"
     fi
 }
+read -rd '' default_config <<'EOF'
+# This is a config file dotMaster uses to create links and install your dotfiles
+# to know anout this config file visit "https://github.com/ashish-kus/dotfiles"
+
+EOF
+
+parse_ini() {
+    local ini_file="$CONFIG_PATH"
+    current_section=""
+    while IFS= read -r line; do
+        line=$(echo "$line" | sed -e 's/^[ \t]*//;s/[ \t]*$//')
+        if [[ "$line" =~ ^\; ]] || [[ "$line" =~ ^\# ]] || [[ -z "$line" ]]; then
+            continue
+        fi
+        if [[ "$line" =~ ^\[.*\]$ ]]; then
+            current_section=$(echo "$line" | sed -e 's/^\[\(.*\)\]$/\1/')
+        else
+            key=$(echo "$line" | cut -d '=' -f 1)
+            value=$(echo "$line" | cut -d '=' -f 2-)
+            export "${current_section}_${key}"="$value"
+        fi
+    done < "$ini_file"
+}
 
 create_symlinks() {
   # directory_list=$(find "$DOTFILES_PATH" -mindepth 1 -type f -not -name 'install.sh')
@@ -174,17 +197,26 @@ DOTFILES_PATH="${DOTFILES_PATH:-$HOME/.dotfiles}"
 DOTFILES_PATH="$(eval echo "$DOTFILES_PATH")"
 export DOTFILES_PATH="$DOTFILES_PATH" # path might contain variables or special characters that 
                                       # need to be expanded or interpreted correctly.                                      
-DOTMASTER_CONFIG_PATH="$DOTFILES_PATH/dotmaster.conf"
+CONFIG_PATH="$DOTFILES_PATH/config.ini"
 setup_package_manager
 # _a "Want to install all packages ?"
-
 if ! command_exists "git";then
     install_packages "git"
 fi 
 
 DOTFILE_GIT_REPO=${DOTFILE_GIT_REPO:-${1}}
 installing_repo "$DOTFILE_GIT_REPO"
+
+# if [ ! -f $CONFIG_PATH ]; then
+#     _e "config not found at $CONFIG_PATH"
+#     _a "Creating config_ini at $CONFIG_PATH"
+#     printf '%s\n' "$default_config" > "$CONFIG_PATH"
+#     _s "config created successfully "
+# else
+#     _s "config found at $CONFIG_PATH"
+# fi
+# parse_ini $CONFIG_PATH
 # echo $DOTFILE_GIT_REPO
-create_symlinks
+# create_symlinks
 }
 main $@
