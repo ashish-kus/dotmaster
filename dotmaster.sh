@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # setup options for the script
-set -euo pipefail
+# set -euo pipefail
 
 # setup environment variables
 DOTMASTER_LOG_FILE=${DOTMASTER_LOG_FILE:-$HOME/.dotmaster.log}
@@ -35,7 +35,7 @@ _e() { _a "${red}$1${normal}"; }
 _s() { _a "${green}$1${normal}"; }
 
 # Function to prompt the user for input
-_q() { read -rp "🤔 $1: " "$2"; }
+_q() { read -rp "? $1: " "$2"; }
 
 # Function to log messages to a logfile
 _log() {
@@ -136,7 +136,8 @@ read -rd '' default_config <<'EOF'
 EOF
 
 parse_ini() {
-    local ini_file="$CONFIG_PATH"
+    local ini_file="$1"
+    echo "$ini_file"
     current_section=""
     while IFS= read -r line; do
         line=$(echo "$line" | sed -e 's/^[ \t]*//;s/[ \t]*$//')
@@ -153,50 +154,46 @@ parse_ini() {
     done < "$ini_file"
 }
 
+
 create_symlinks() {
-  # directory_list=$(find "$DOTFILES_PATH" -mindepth 1 -type f -not -name 'install.sh')
-  directory_list=$(find "$DOTFILES_PATH" -mindepth 1 -type f )
-  _a "creating symbolic links"
+  local directory_path=$1
+  echo $directory_path
 
-  for entry in $directory_list; do
-    # Trim "./" and extract the relative path
-    modified_entry="${entry#./}"
-    modified_entry="${modified_entry#*/}"
+  if [ ! -d "$directory_path" ]; then
+    _e "Error: Source directory not found."
+    return 1
+  fi
 
-    # Obtain absolute paths
-    absolute_path=$(realpath "${entry#./}")
-    absolute_modified_entry="$HOME/$modified_entry"
+  # directory_list=$(find "$directory_path" -mindepth 1 -type f )
+    directory_list=$(find "$directory_path" -mindepth 1 -type f ! -path "$directory_path/.git/*" ! -name "config.ini")
 
-    # Determine the target directory
-    target_dir="$(dirname "$absolute_modified_entry")"
-
-    # Check if the target directory exists, create it if not
-    if [ ! -e "$target_dir" ]; then
+  for entry in $directory_list ; do
+    local source=$entry
+    local target=$HOME/${source#$directory_path/*/}
+    
+   # Determine the target directory
+    target_dir="$(dirname "$target")"
+    if [ ! -e "$target_dir" ]; then    # Check if the target directory exists, create it if not
       mkdir -p "$target_dir"
       _a "Created directory: $target_dir"
     fi
-
-
     # Uncomment the line below to create symbolic links
-    ln -sf "$absolute_path" "$absolute_modified_entry"
-
+    ln -sf "$source" "$target"
     # Display the symbolic link creation information
-    _s "$absolute_path >>>> $absolute_modified_entry"
-
+    _s "$source >>>> $target"
   done
 }
 
+
 main() {
 _w
-_w "  ┌──────────────────────────────────────────┐"
-_w "~ │ 🚀 Welcome to the ${green}DOTMASTER${normal} installer!  │ ~"
-_w "  └──────────────────────────────────────────┘"
+_w "~ │ 🚀 Welcome to the ${green}DOTMASTER${normal} installer!    │ ~"
 _w
-_q 'Where do you want your dotfiles to be located? (default ~/.dotfiles)' "DOTFILES_PATH"
-DOTFILES_PATH="${DOTFILES_PATH:-$HOME/.dotfiles}"
-DOTFILES_PATH="$(eval echo "$DOTFILES_PATH")"
+DOTFILES_PATH="${DOTFILES_PATH:-$HOME}"
+DOTFILES_PATH="$(eval echo "$DOTFILES_PATH/.dotfiles")"
 export DOTFILES_PATH="$DOTFILES_PATH" # path might contain variables or special characters that 
-                                      # need to be expanded or interpreted correctly.                                      
+#                                       # need to be expanded or interpreted correctly.                                      
+# echo " $DOTFILES_PATH"
 CONFIG_PATH="$DOTFILES_PATH/config.ini"
 setup_package_manager
 # _a "Want to install all packages ?"
@@ -207,16 +204,15 @@ fi
 DOTFILE_GIT_REPO=${DOTFILE_GIT_REPO:-${1}}
 installing_repo "$DOTFILE_GIT_REPO"
 
-# if [ ! -f $CONFIG_PATH ]; then
-#     _e "config not found at $CONFIG_PATH"
-#     _a "Creating config_ini at $CONFIG_PATH"
-#     printf '%s\n' "$default_config" > "$CONFIG_PATH"
-#     _s "config created successfully "
-# else
-#     _s "config found at $CONFIG_PATH"
-# fi
+if [ ! -f $CONFIG_PATH ]; then
+    _e "config not found at $CONFIG_PATH"
+    _a "Creating config_ini at $CONFIG_PATH"
+    printf '%s\n' "$default_config" > "$CONFIG_PATH"
+    _s "config created successfully "
+else
+    _s "config found at $CONFIG_PATH"
+fi
 # parse_ini $CONFIG_PATH
-# echo $DOTFILE_GIT_REPO
-# create_symlinks
+create_symlinks $DOTFILES_PATH
 }
 main $@
