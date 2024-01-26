@@ -1,5 +1,5 @@
-# DotMaster
-A awesome stow alternative for creating and installing dotfiles.
+<div align="center" width="100%"> <img src="./asset/thumbnail.png"> </div>
+
 # Dotmaster - A Dotfile Automation
 ### Overview
 
@@ -12,7 +12,7 @@ dotmaster is a simple dotfile manager tool written in Bash, designed to follow t
 
 ### Prerequisites
 
-Bash (v4.0 or later)
+Bash (v4.0 or later), 
 Git
 
 ### Installation
@@ -34,14 +34,14 @@ chmod +x dotmaster.sh
 ```
 Run the script:
 ```
-./dotmaster.sh
+./dotmaster.sh <URL to your repository>
 ```
 
 ### Usage
 
 Configure Dotfiles:
 
-#### Understanding File Structure:**
+#### Understanding File Structure:
 
 1. Create a Version-Controlled Repository:
    - Initiate a GitHub repository for your dotfiles.
@@ -51,15 +51,15 @@ Configure Dotfiles:
 
 3. Simulate Home Directory:
    - Within each application folder, simulate the home directory structure. For example:
-     ```
-     dotfiles/
-     ├── starship/
-     │   └── .config/
-     │       └── starship.toml
-     ├── bash/
-     │   └── .bashrc
-     │   └── .bash_logout
-     ```
+```
+ dotfiles/
+ ├── starship/
+ │   └── .config/
+ │       └── starship.toml
+ ├── bash/
+ │   └── .bashrc
+ │   └── .bash_logout
+ ```
 
    - Assume each application's config expects its files at the home directory and structure accordingly.
 
@@ -82,11 +82,5 @@ If dotfiles already exist, dotmaster creates a backup before making any changes.
 
 The configuration file config.ini is used to specify dotfiles and their respective configurations.
 Ensure the dotfiles repository is correctly set in the config.ini file.
-
-### Contributing
-
-Project is under development.
-Contributions are welcome! Feel free to open issues, submit feature requests, or contribute directly by creating pull requests.
-License
 
 This project is licensed under the MIT License.
