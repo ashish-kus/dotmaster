@@ -98,12 +98,13 @@ install_packages() {
         do
           if ! command_exists "$package"; then
             _a "Installing $package using $package_manager"
-            # yes | $INSTALL_COMMAND $package 2>&1 | _log "installing $package using $package_manager"
-            $INSTALL_COMMAND $package 2>&1
+            yes | $INSTALL_COMMAND $package 2>&1 | _log "installing $package using $package_manager"
+            # $INSTALL_COMMAND $package 2>&1
             _s "$package installed using $package_manager"
           else
               _s "$package is already installed."
           fi
+          echo $package
     done
 }
 
@@ -202,7 +203,7 @@ if ! command_exists "git";then
 fi 
 
 DOTFILE_GIT_REPO=${DOTFILE_GIT_REPO:-${1}}
-installing_repo "$DOTFILE_GIT_REPO"
+# installing_repo "$DOTFILE_GIT_REPO"
 
 if [ ! -f $CONFIG_PATH ]; then
     _e "config not found at $CONFIG_PATH"
@@ -212,7 +213,10 @@ if [ ! -f $CONFIG_PATH ]; then
 else
     _s "config found at $CONFIG_PATH"
 fi
-# parse_ini $CONFIG_PATH
-create_symlinks $DOTFILES_PATH
+
+
+parse_ini $CONFIG_PATH
+install_packages $PACKAGE_INSTALL_LIST
+# create_symlinks $DOTFILES_PATH
 }
 main $@
