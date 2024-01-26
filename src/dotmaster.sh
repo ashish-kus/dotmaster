@@ -1,17 +1,9 @@
 #!/usr/bin/env bash
 
-# setup options for the script
-# set -euo pipefail
-
-# setup environment variables
+set -oue pipefail
+# set -x pipefail
 DOTMASTER_LOG_FILE=${DOTMASTER_LOG_FILE:-$HOME/.dotmaster.log}
-# DOT_DIR=${DOT_DIR:-${1:-"./"}}
-# PACKAGE_MANAGER=y${PACKAGE_MANAGER:-yay}
 PACKAGE_LIST=("git" "curl" "wget" "zsh" "tmux" "foot")
-# INSTALL_COMMAND="yay -S"
-# DOTFILE_GIT_REPO="https://github.com/ashish-kus/dotfiles"
-
-### Printing Functuins
 
 # color variables
 red='\033[0;31m'
@@ -19,25 +11,16 @@ green='\033[0;32m'
 purple='\033[0;35m'
 normal='\033[0m'
 
-# Function to print a message
 _w() {
     local -r text="${1-}"
     echo -e "$text"
   }
 
-# Function to print an announcement message
 _a() { _w " > $1"; }                  
-
-# Function to print an error message (with red color)
 _e() { _a "${red}$1${normal}"; }
-
-# Function to print a success message (with green color)
 _s() { _a "${green}$1${normal}"; }
-
-# Function to prompt the user for input
 _q() { read -rp "? $1: " "$2"; }
 
-# Function to log messages to a logfile
 _log() {
   if [ ! -f $DOTMASTER_LOG_FILE ]; then
       _e "$DOTMASTER_LOG_FILE not Found"
@@ -56,11 +39,9 @@ _log() {
 	echo "" >>"$DOTMASTER_LOG_FILE"
 }
 
-# Function to check if a command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
-
 
 setup_package_manager() {
     if command_exists apt; then
@@ -84,7 +65,6 @@ setup_package_manager() {
     fi
 }
 
-# Function to install one or more packages
 install_packages() {
     local package_manager="$PACKAGE_MANAGER"
     packages=( "$@" )
@@ -93,21 +73,19 @@ install_packages() {
         _e "No packages specified to install."
         return
     fi
-
     for package in "${packages[@]}";
         do
           if ! command_exists "$package"; then
+            _e "Uh-oh! $package is missing."
             _a "Installing $package using $package_manager"
-            yes | $INSTALL_COMMAND $package 2>&1 | _log "installing $package using $package_manager"
+            yes | $INSTALL_COMMAND "$package" 2>&1 | _log "installing $package"
             # $INSTALL_COMMAND $package 2>&1
-            _s "$package installed using $package_manager"
+            if [ $? == 0 ]; then _s "$package installed using $package_manager" ;else _e "can't install $package"; (exit 1); fi;
           else
               _s "$package is already installed."
           fi
-          echo $package
     done
 }
-
 
 installing_repo() {
     if [ -d "$DOTFILES_PATH" ]; then
@@ -125,20 +103,22 @@ installing_repo() {
         fi
     fi
     if command_exists "git"; then
-        git clone "$1" "$DOTFILES_PATH"
+        _a "cloning $1"
+        git clone "$1" "$DOTFILES_PATH" 2>&1 | _log "cloning dotfile REPOSITORY"
     else
         _e "git not installed"
     fi
 }
-read -rd '' default_config <<'EOF'
-# This is a config file dotMaster uses to create links and install your dotfiles
-# to know anout this config file visit "https://github.com/ashish-kus/dotfiles"
 
-EOF
+# read -r -d '' default_config <<'EOF'
+#  This is a config file dotMaster uses to create links and install your dotfiles
+#  to know anout this config file visit https://github.com/ashish-kus/dotfiles
+# EOF
+default_config="#  This is a config file dotMaster uses to create links and install your dotfiles \n #  to know anout this config file visit 'https://github.com/ashish-kus/dotfiles'"
 
 parse_ini() {
     local ini_file="$1"
-    echo "$ini_file"
+    # echo "$ini_file"
     current_section=""
     while IFS= read -r line; do
         line=$(echo "$line" | sed -e 's/^[ \t]*//;s/[ \t]*$//')
@@ -155,36 +135,27 @@ parse_ini() {
     done < "$ini_file"
 }
 
-
 create_symlinks() {
   local directory_path=$1
-  echo $directory_path
+  # echo $directory_path
 
   if [ ! -d "$directory_path" ]; then
     _e "Error: Source directory not found."
     return 1
   fi
-
-  # directory_list=$(find "$directory_path" -mindepth 1 -type f )
-    directory_list=$(find "$directory_path" -mindepth 1 -type f ! -path "$directory_path/.git/*" ! -name "config.ini")
-
+  directory_list=$(find "$directory_path" -mindepth 1 -type f ! -path "$directory_path/.git*/*" ! -name "config.ini")
   for entry in $directory_list ; do
     local source=$entry
     local target=$HOME/${source#$directory_path/*/}
-    
-   # Determine the target directory
     target_dir="$(dirname "$target")"
     if [ ! -e "$target_dir" ]; then    # Check if the target directory exists, create it if not
       mkdir -p "$target_dir"
       _a "Created directory: $target_dir"
     fi
-    # Uncomment the line below to create symbolic links
     ln -sf "$source" "$target"
-    # Display the symbolic link creation information
-    _s "$source >>>> $target"
+    _s "  $target"
   done
 }
-
 
 main() {
 _w
@@ -194,29 +165,28 @@ DOTFILES_PATH="${DOTFILES_PATH:-$HOME}"
 DOTFILES_PATH="$(eval echo "$DOTFILES_PATH/.dotfiles")"
 export DOTFILES_PATH="$DOTFILES_PATH" # path might contain variables or special characters that 
 #                                       # need to be expanded or interpreted correctly.                                      
-# echo " $DOTFILES_PATH"
-CONFIG_PATH="$DOTFILES_PATH/config.ini"
+CONFIG_PATH="${CONFIG_PATH:-$DOTFILES_PATH/config.ini}"
 setup_package_manager
-# _a "Want to install all packages ?"
+_a "Want to install all packages ?"
 if ! command_exists "git";then
     install_packages "git"
 fi 
 
 DOTFILE_GIT_REPO=${DOTFILE_GIT_REPO:-${1}}
-# installing_repo "$DOTFILE_GIT_REPO"
+installing_repo "$DOTFILE_GIT_REPO" 
 
 if [ ! -f $CONFIG_PATH ]; then
     _e "config not found at $CONFIG_PATH"
     _a "Creating config_ini at $CONFIG_PATH"
-    printf '%s\n' "$default_config" > "$CONFIG_PATH"
+    echo -e "$default_config" > "$CONFIG_PATH"
     _s "config created successfully "
 else
     _s "config found at $CONFIG_PATH"
 fi
 
-
 parse_ini $CONFIG_PATH
 install_packages $PACKAGE_INSTALL_LIST
-# create_symlinks $DOTFILES_PATH
+create_symlinks $DOTFILES_PATH
+_s "All set! Terminal, take charge! 🛠️💻"
 }
-main $@
+main "$@"
