@@ -56,9 +56,7 @@ setup_package_manager() {
     elif command_exists yay; then
         PACKAGE_MANAGER="yay"
         INSTALL_COMMAND="yay -S --noconfirm"
-    elif command_exists pacman; then
-        PACKAGE_MANAGER="pacman"
-        INSTALL_COMMAND="sudo pacman -S --noconfirm"
+    elif command_exists pacman; then PACKAGE_MANAGER="pacman" INSTALL_COMMAND="sudo pacman -S --noconfirm"
     else
         _e "Unsupported package manager. Please install packages manually."
         exit 1
