@@ -169,6 +169,7 @@ while getopts ":u:d:-:" opt; do
             fi
             echo "url $OPTARG"
             use_git_repo=true
+            DOTFILE_GIT_REPO=$OPTARG
             ;;
         d | -d)
             if [ -z "$OPTARG" ]; then
@@ -207,11 +208,16 @@ elif $use_git_repo; then
     # _s "Using git repo: $DOTFILE_GIT_REPO"
     _s "Using git repo: "
     _s $use_git_repo
+    installing_repo $DOTFILE_GIT_REPO
+    # echo $DOTFILE_GIT_REPO
+
 elif $use_local_dir; then
     _s "Using local directory: "
     _s $use_local_dir
     # _s "Using local directory: $DOTFILES_PATH"
 fi
+
+
 }
 main "$@"
 

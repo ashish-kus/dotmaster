@@ -239,6 +239,8 @@ fi
 _s "All set! Terminal, take charge! 🛠️💻"
 
 }
+main "$@"
+
 # main() {
 # _w
 # _w "~ │ 🚀 Welcome to the ${green}DOTMASTER${normal} installer!    │ ~"
@@ -253,10 +255,8 @@ _s "All set! Terminal, take charge! 🛠️💻"
 # if ! command_exists "git";then
 #     install_packages "git"
 # fi 
-
 # DOTFILE_GIT_REPO=${DOTFILE_GIT_REPO:-${1}}
 # installing_repo "$DOTFILE_GIT_REPO" 
-
 # if [ ! -f $CONFIG_PATH ]; then
 #     _e "config not found at $CONFIG_PATH"
 #     _a "Creating config_ini at $CONFIG_PATH"
@@ -265,12 +265,9 @@ _s "All set! Terminal, take charge! 🛠️💻"
 # else
 #     _s "config found at $CONFIG_PATH"
 # fi
-
 # parse_ini $CONFIG_PATH
 # install_packages $PACKAGE_INSTALL_LIST
 # create_symlinks $DOTFILES_PATH
 # _s "All set! Terminal, take charge! 🛠️💻"
-
 # }
-main "$@"
 
