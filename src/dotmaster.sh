@@ -3,7 +3,6 @@
 set -oue pipefail
 # set -x pipefail
 DOTMASTER_LOG_FILE=${DOTMASTER_LOG_FILE:-$HOME/.dotmaster.log}
-# PACKAGE_LIST=("git" "curl" "wget" "zsh" "tmux" "foot")
 
 # color variables
 red='\033[0;31m'
@@ -61,50 +60,38 @@ setup_package_manager() {
         exit 1
     fi
 }
-install_packages() {
-    local package_manager="$PACKAGE_MANAGER"
-    local packages=( "$@" )  # Use local keyword for packages array
-    # if [ "${#packages[@]}" -eq 0 ]; then
-    #     print_error "No packages specified to install."
-    #     return
-    # fi
-    # for package in "${packages[@]}"; do
-    #     if ! command_exists "$package"; then
-    #         _e "Uh-oh! $package is missing."
-    #         _a "Installing $package using $package_manager..."
-    #         yes | $INSTALL_COMMAND "$package" 2>&1 | _log "installing $package"
-    #         if [ $? -eq 0 ]; then
-    #             print_success "$package installed using $package_manager"
-    #         else
-    #             print_error "Failed to install $package."
-    #             exit 1
-    #         fi
-    #     else
-    #         _s "$package is already installed."
-    #     fi
-    # done
+
+# Function to check if a command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
 }
-# install_packages() {
-#     local package_manager="$PACKAGE_MANAGER"
-#     packages=( "$@" )
-#     echo $packages
-    # if [ "${#packages[@]}" -eq 0 ]; then
-    #     _e "No packages specified to install."
-    #     return
-    # fi
-    # for package in "${packages[@]}";
-    #     do
-    #       if ! command_exists "$package"; then
-    #         _e "Uh-oh! $package is missing."
-    #         _a "Installing $package using $package_manager"
-    #         yes | $INSTALL_COMMAND "$package" 2>&1 | _log "installing $package"
-    #         # $INSTALL_COMMAND $package 2>&1
-    #         if [ $? == 0 ]; then _s "$package installed using $package_manager" ;else _e "can't install $package"; (exit 1); fi;
-    #       else
-    #           _s "$package is already installed."
-    #       fi
-    # done
-# }
+
+# Function to install packages
+install_packages() {
+  echo "installing packages---------------------------------------------"
+    local package_manager="$PACKAGE_MANAGER"
+    local packages=( "$@" )
+
+    if [ "${#packages[@]}" -eq 0 ]; then
+        echo "No packages specified to install."
+        return
+    fi
+
+    for package in "${packages[@]}"; do
+        if ! command_exists "$package"; then
+            _e "Uh-oh! $package is missing."
+            _a "Installing $package using $package_manager..."
+            if $INSTALL_COMMAND "$package" 2>&1; then
+                _s "$package installed using $package_manager"
+            else
+                _e "Failed to install $package."
+            fi
+        else
+            _a "$package is already installed."
+        fi
+    done
+    # echo $PACKAGE_MANAGER $PACKAGE_INSTALL_COMMAND $PACKAGE_INSTALL_LIST
+}
 
 installing_repo() {
     if [ -d "$DOTFILES_PATH" ]; then
@@ -258,8 +245,11 @@ elif $use_git_repo; then
       _s "Using local directory: "
       _s $use_local_dir
       _s "update synk"
-    create_symlinks $DOTFILES_PATH
-    # _s "Using local directory: $DOTFILES_PATH"
+      parse_ini $CONFIG_PATH
+      install_packages $PACKAGE_INSTALL_LIST
+
+      create_symlinks $DOTFILES_PATH
+      # _s "Using local directory: $DOTFILES_PATH"
 fi
 
 _s "All set! Terminal, take charge! 🛠️💻"
