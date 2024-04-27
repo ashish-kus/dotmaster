@@ -3,7 +3,7 @@
 set -oue pipefail
 # set -x pipefail
 DOTMASTER_LOG_FILE=${DOTMASTER_LOG_FILE:-$HOME/.dotmaster.log}
-PACKAGE_LIST=("git" "curl" "wget" "zsh" "tmux" "foot")
+# PACKAGE_LIST=("git" "curl" "wget" "zsh" "tmux" "foot")
 
 # color variables
 red='\033[0;31m'
@@ -19,7 +19,6 @@ _w() {
 _a() { _w " > $1"; }                  
 _e() { _a "${red}$1${normal}"; }
 _s() { _a "${green}$1${normal}"; }
-_q() { read -rp "? $1: " "$2"; }
 
 _log() {
   if [ ! -f $DOTMASTER_LOG_FILE ]; then
@@ -62,28 +61,50 @@ setup_package_manager() {
         exit 1
     fi
 }
-
 install_packages() {
     local package_manager="$PACKAGE_MANAGER"
-    packages=( "$@" )
-
-    if [ "${#packages[@]}" -eq 0 ]; then
-        _e "No packages specified to install."
-        return
-    fi
-    for package in "${packages[@]}";
-        do
-          if ! command_exists "$package"; then
-            _e "Uh-oh! $package is missing."
-            _a "Installing $package using $package_manager"
-            yes | $INSTALL_COMMAND "$package" 2>&1 | _log "installing $package"
-            # $INSTALL_COMMAND $package 2>&1
-            if [ $? == 0 ]; then _s "$package installed using $package_manager" ;else _e "can't install $package"; (exit 1); fi;
-          else
-              _s "$package is already installed."
-          fi
-    done
+    local packages=( "$@" )  # Use local keyword for packages array
+    # if [ "${#packages[@]}" -eq 0 ]; then
+    #     print_error "No packages specified to install."
+    #     return
+    # fi
+    # for package in "${packages[@]}"; do
+    #     if ! command_exists "$package"; then
+    #         _e "Uh-oh! $package is missing."
+    #         _a "Installing $package using $package_manager..."
+    #         yes | $INSTALL_COMMAND "$package" 2>&1 | _log "installing $package"
+    #         if [ $? -eq 0 ]; then
+    #             print_success "$package installed using $package_manager"
+    #         else
+    #             print_error "Failed to install $package."
+    #             exit 1
+    #         fi
+    #     else
+    #         _s "$package is already installed."
+    #     fi
+    # done
 }
+# install_packages() {
+#     local package_manager="$PACKAGE_MANAGER"
+#     packages=( "$@" )
+#     echo $packages
+    # if [ "${#packages[@]}" -eq 0 ]; then
+    #     _e "No packages specified to install."
+    #     return
+    # fi
+    # for package in "${packages[@]}";
+    #     do
+    #       if ! command_exists "$package"; then
+    #         _e "Uh-oh! $package is missing."
+    #         _a "Installing $package using $package_manager"
+    #         yes | $INSTALL_COMMAND "$package" 2>&1 | _log "installing $package"
+    #         # $INSTALL_COMMAND $package 2>&1
+    #         if [ $? == 0 ]; then _s "$package installed using $package_manager" ;else _e "can't install $package"; (exit 1); fi;
+    #       else
+    #           _s "$package is already installed."
+    #       fi
+    # done
+# }
 
 installing_repo() {
     if [ -d "$DOTFILES_PATH" ]; then
@@ -156,35 +177,40 @@ create_symlinks() {
 }
 
 
-
-
 main() {
-_w
-_w "~ │ 🚀 Welcome to the ${green}DOTMASTER${normal} installer!    │ ~"
-_w
 local use_git_repo=false
 local use_local_dir=false
 
-while getopts ":u:d:-:" opt; do
+DOTFILES_PATH="${DOTFILES_PATH:-$HOME}"
+DOTFILES_PATH="$(eval echo "$DOTFILES_PATH/.dotfiles")"
+export DOTFILES_PATH="$DOTFILES_PATH" # path might contain variables or special characters that 
+                                      # need to be expanded or interpreted correctly.                                      
+CONFIG_PATH="${CONFIG_PATH:-$DOTFILES_PATH/config.ini}"
+
+setup_package_manager
+if ! command_exists "git";then
+    install_packages "git"
+fi 
+
+while getopts ":u:s-:" opt; do
     case $opt in 
         u | -u)
             if [ -z "$OPTARG" ]; then
                 _e "Error: Argument missing from option -$opt"
                 exit 1
             fi
-            DOTFILE_GIT_REPO=${DOTFILE_GIT_REPO:-$OPTARG}
+            echo "url $OPTARG"
             use_git_repo=true
+            DOTFILE_GIT_REPO=$OPTARG
             ;;
-        d | -d)
-            if [ -z "$OPTARG" ]; then
-                _e "Error: Argument missing from option -$opt"
-                exit 1
-            fi
-            DOTFILES_PATH="${DOTFILES_PATH:-$OPTARG}"
-            DOTFILES_PATH="$(eval echo "$DOTFILES_PATH/.dotfiles")"
-            export DOTFILES_PATH="$DOTFILES_PATH"
-            CONFIG_PATH="${CONFIG_PATH:-$DOTFILES_PATH/config.ini}"
+        s | -s)
+            # if [ -z "$OPTARG" ]; then
+            #     _e "Error: Argument missing from option -$opt"
+            #     exit 1
+            # fi
             use_local_dir=true
+            # DOTDIR=$OPTARG
+            # echo "local $DOTDIR"
             ;;
         -)
             case "${OPTARG}" in
@@ -211,63 +237,32 @@ if $use_git_repo && $use_local_dir; then
     _e "Error: Both URL and directory options cannot be used together"
     exit 1
 elif $use_git_repo; then
-    _s "Using git repo: $DOTFILE_GIT_REPO"
-elif $use_local_dir; then
-    _s "Using local directory: $DOTFILES_PATH"
+    # _s "Using git repo: $DOTFILE_GIT_REPO"
+    _s "Using git repo: "
+    _s $use_git_repo
+    installing_repo $DOTFILE_GIT_REPO
+
+    if [ ! -f $CONFIG_PATH ]; then
+        _e "config not found at $CONFIG_PATH"
+        _a "Creating config_ini at $CONFIG_PATH"
+        echo -e "$default_config" > "$CONFIG_PATH"
+        _s "config created successfully "
+    else
+        _s "config found at $CONFIG_PATH"
+    fi
+    parse_ini $CONFIG_PATH
+    install_packages $PACKAGE_INSTALL_LIST
+    create_symlinks $DOTFILES_PATH
+    # echo $DOTFILE_GIT_REPO
+    elif $use_local_dir; then
+      _s "Using local directory: "
+      _s $use_local_dir
+      _s "update synk"
+    create_symlinks $DOTFILES_PATH
+    # _s "Using local directory: $DOTFILES_PATH"
 fi
 
-# setup_package_manager
-# _a "Want to install all packages ?"
-# if ! command_exists "git";then
-#     install_packages "git"
-# fi 
-# # DOTFILE_GIT_REPO=${DOTFILE_GIT_REPO:-${1}}
-# installing_repo "$DOTFILE_GIT_REPO" 
-
-# if [ ! -f $CONFIG_PATH ]; then
-#     _e "config not found at $CONFIG_PATH"
-#     _a "Creating config_ini at $CONFIG_PATH"
-#     echo -e "$default_config" > "$CONFIG_PATH"
-#     _s "config created successfully "
-# else
-#     _s "config found at $CONFIG_PATH"
-# fi
-
-# parse_ini $CONFIG_PATH
-# install_packages $PACKAGE_INSTALL_LIST
-# create_symlinks $DOTFILES_PATH
 _s "All set! Terminal, take charge! 🛠️💻"
-
 }
 main "$@"
-
-# main() {
-# _w
-# _w "~ │ 🚀 Welcome to the ${green}DOTMASTER${normal} installer!    │ ~"
-# _w
-# DOTFILES_PATH="${DOTFILES_PATH:-$HOME}"
-# DOTFILES_PATH="$(eval echo "$DOTFILES_PATH/.dotfiles")"
-# export DOTFILES_PATH="$DOTFILES_PATH" # path might contain variables or special characters that 
-# #                                       # need to be expanded or interpreted correctly.                                      
-# CONFIG_PATH="${CONFIG_PATH:-$DOTFILES_PATH/config.ini}"
-# setup_package_manager
-# _a "Want to install all packages ?"
-# if ! command_exists "git";then
-#     install_packages "git"
-# fi 
-# DOTFILE_GIT_REPO=${DOTFILE_GIT_REPO:-${1}}
-# installing_repo "$DOTFILE_GIT_REPO" 
-# if [ ! -f $CONFIG_PATH ]; then
-#     _e "config not found at $CONFIG_PATH"
-#     _a "Creating config_ini at $CONFIG_PATH"
-#     echo -e "$default_config" > "$CONFIG_PATH"
-#     _s "config created successfully "
-# else
-#     _s "config found at $CONFIG_PATH"
-# fi
-# parse_ini $CONFIG_PATH
-# install_packages $PACKAGE_INSTALL_LIST
-# create_symlinks $DOTFILES_PATH
-# _s "All set! Terminal, take charge! 🛠️💻"
-# }
 
